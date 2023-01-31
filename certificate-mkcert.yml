@@ -1,0 +1,13 @@
+# Reference: https://cert-manager.io/docs/usage/certificate/
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-cert
+  namespace: istio-system
+spec:
+  secretName: argocd-tls-secret
+  dnsNames:
+    - argocd-local.hole19golf.com  # Change this to your domain
+  issuerRef:
+    name: tls-ca-issuer
+    kind: ClusterIssuer
