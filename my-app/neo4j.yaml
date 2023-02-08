@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neo4j-config
+  labels:
+    app: neo4j
+data:
+  NEO4J_AUTH: none
+  NEO4J_dbms_allow__upgrade: "true"
+  NEO4J_dbms_recovery_fail__on__missing__files: "false"
+  NEO4JLABS_PLUGINS: '["apoc"]'
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: neo4j-pvc
+  labels:
+    app: neo4j
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neo4j
+  labels:
+    app: neo4j
+spec:
+  ports:
+  - port: 7687
+    protocol: TCP
+    targetPort: 7687
+  selector:
+    app: neo4j
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neo4j-http
+  labels:
+    app: neo4j
+spec:
+  ports:
+  - port: 7474
+    protocol: TCP
+    targetPort: 7474
+  selector:
+    app: neo4j
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neo4j  # Sets Deployment name
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neo4j
+  template:
+    metadata:
+      labels:
+        app: neo4j
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+        - name: neo4j
+          image: neo4j/neo4j-arm64-experimental:4.0.12-arm64
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 7474
+            - containerPort: 7687
+          envFrom:
+            - configMapRef:
+                name: neo4j-config
+          volumeMounts:
+            - mountPath: /data
+              name: neo4j-data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: neo4j-data
+          persistentVolumeClaim:
+            claimName: neo4j-pvc

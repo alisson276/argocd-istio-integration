@@ -1,0 +1,43 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: <APP>-gateway
+  namespace: <APP>
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - hosts:
+    - <APP>-local.<MY_DOMAIN>  # Change this to your domain
+    port:
+      name: http
+      number: 80
+      protocol: HTTP
+    tls:
+      httpsRedirect: true
+  - hosts:
+    - <APP>-local.<MY_DOMAIN> # Change this to your domain
+    port:
+      name: https
+      number: 443
+      protocol: HTTPS
+    tls:
+      credentialName: <APP>-tls-secret
+      mode: SIMPLE
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: <APP>
+  namespace: <APP>
+spec:
+  gateways:
+  - <APP>-gateway
+  hosts:
+  - <APP>-local.<MY_DOMAIN> # Change this to your domain
+  http:
+  - route:
+    - destination:
+        host: <APP>.<NAMESPACE>.svc.cluster.local
+        port:
+          number: 9000

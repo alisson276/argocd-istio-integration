@@ -2,12 +2,12 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: argocd-cert
+  name: <MY_APP>-cert
   namespace: istio-system
 spec:
-  secretName: argocd-tls-secret
+  secretName: <MY_APP>-tls-secret
   dnsNames:
-    - argocd-local.<MY_DOMAIN>  # Change this to your domain
+    - <MY_APP>-local.<MY_DOMAIN>  # Change this to your domain
   issuerRef:
     name: tls-ca-issuer
     kind: ClusterIssuer

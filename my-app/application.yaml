@@ -1,0 +1,102 @@
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: <MY_APP>-config
+  labels:
+    app: <MY_APP>
+data:
+  RAILS_ENV: staging
+  PORT: "9000"
+  MALLOC_ARENA_MAX: "2"
+  WEB_CONCURRENCY: "0"
+  PROCFILE: Procfile.web
+  BUNDLE_WITHOUT: development test
+  REDIS_URL: redis://redis:6379/
+  NEO4J_URL: bolt://neo4j:7687
+  DATABASE_URL: postgis://postgres:postgres@postgres:5432/<MY_APP>_development
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: <MY_APP>
+  labels:
+    app: <MY_APP>
+    service: <MY_APP>
+spec:
+  ports:
+  - port: 9000
+    name: http
+  selector:
+    app: <MY_APP>
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: <MY_APP>-sa
+  labels:
+    account: <MY_APP>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: <MY_APP>-v1
+  labels:
+    app: <MY_APP>
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: <MY_APP>
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: <MY_APP>
+        version: v1
+    spec:
+      serviceAccountName: <MY_APP>-sa
+      containers:
+        - name: <MY_APP>
+          image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/h19-<MY_APP>:2279-arm64
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9000
+          # securityContext:
+          #   runAsUser: 1000
+          envFrom:
+            - configMapRef:
+                name: <MY_APP>-config
+          env:
+            # kubectl create secret generic <MY_APP>-secrets --from-literal=rails_master_key='123' ...
+            - name: RAILS_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: <MY_APP>-secrets
+                  key: rails_master_key
+                  optional: false
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              memory: 1Gi
+      initContainers:
+        - name: db-migrate
+          image: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/h19-<MY_APP>:2279-arm64
+          command: ["sh", "-c", "bundle exec rake db:migrate neo4j:migrate"]
+          # command: [ "/bin/bash", "-c", "--" ]
+          # args: [ "trap : TERM INT; sleep infinity & wait" ]
+          envFrom:
+            - configMapRef:
+                name: <MY_APP>-config
+          env:
+            - name: RAILS_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: <MY_APP>-secrets
+                  key: rails_master_key
+      imagePullSecrets:
+      # kubectl create secret docker-registry h19aws-ecr --docker-server=<AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com --docker-username=AWS --docker-password=$(aws ecr get-login-password)
+        - name: h19aws-ecr

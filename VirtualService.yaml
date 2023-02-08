@@ -7,7 +7,7 @@ spec:
   gateways:
   - argocd-gateway
   hosts:
-  - argocd-local.hole19golf.com # Change this to your domain
+  - argocd-local.<MY_DOMAIN> # Change this to your domain
   http:
   - route:
     - destination:

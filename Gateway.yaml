@@ -8,7 +8,7 @@ spec:
     istio: ingressgateway
   servers:
   - hosts:
-    - argocd-local.hole19golf.com  # Change this to your domain
+    - argocd-local.<MY_DOMAIN>  # Change this to your domain
     port:
       name: http
       number: 80
@@ -16,7 +16,7 @@ spec:
     tls:
       httpsRedirect: true
   - hosts:
-    - argocd-local.hole19golf.com # Change this to your domain
+    - argocd-local.<MY_DOMAIN> # Change this to your domain
     port:
       name: https
       number: 443

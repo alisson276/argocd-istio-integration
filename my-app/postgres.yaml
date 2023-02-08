@@ -1,0 +1,84 @@
+# kubectl create configmap postgres-initial-data --from-file=db/structure.sql
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  labels:
+    app: postgres
+data:
+  POSTGRES_DB: <MY_APP>_development
+  POSTGRES_PASSWORD: postgres
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  labels:
+    app: postgres
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  ports:
+  - port: 5432
+    protocol: TCP
+    targetPort: 5432
+  selector:
+    app: postgres
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres  # Sets Deployment name
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+        - name: postgres
+          image: nickblah/postgis:14-bullseye-postgis-3
+          # command: [ "/bin/bash", "-c", "--" ]
+          # args: [ "trap : TERM INT; sleep infinity & wait" ]
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          volumeMounts:
+            - mountPath: /docker-entrypoint-initdb.d
+              name: initial-data
+            - mountPath: /var/lib/postgresql/data
+              name: postgredb
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+        - name: initial-data
+          configMap:
+            name: postgres-initial-data

@@ -19,7 +19,17 @@ metadata:
     app.kubernetes.io/part-of: argocd
 data:
   repositories: |
-    - url: git@github.com:hole19/h19-pop-test
+    - url: <GIT URL>
       sshPrivateKeySecret:
-        name: hole19golf-deploy
+        name: my-deploy
         key: privateKey
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-notifications-cm
+  namespace: argocd
+data:
+  service.slack: |
+    apiURL: <URL>
+    token: $slack-token

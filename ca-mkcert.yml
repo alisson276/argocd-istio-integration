@@ -5,4 +5,4 @@ metadata:
   name: tls-ca-issuer
 spec:
   ca:
-    secretName: hole19golf.com-tls-secret  # Change this to your domain
+    secretName: <MY_DOMAIN>-tls-secret  # Change this to your domain
